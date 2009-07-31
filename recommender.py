@@ -95,7 +95,6 @@ def _main():
     
     usr_data = user_data(data_filename)
     test_list = get_test_user_list(test_filename)
-    #test_list=range(1,50)
 
     batch_size=100
     test_len=len(test_list)
