@@ -88,7 +88,7 @@ def print_results(cand_dict,filename,mode):
 def _main():
     data_filename = "data.txt"
     test_filename = "test.txt"
-    result_filename = "result.txt"
+    result_filename = "results.txt"
     #clear the result file
     with open(result_filename,'w') as f:
         pass
