@@ -1,11 +1,11 @@
-# this is the simplest, dirtiest, brutest approach to the task
+# a mildly intelligent approach
+from __future__ import with_statement
 
 from heapq import nlargest
 from operator import itemgetter
 
 def Jac_simil(set1,set2):
-    """ calculates Jaccard measure of similarity b/w 2 sets representing repos
-        two users are watching"""
+    """ calculates Jaccard measure of similarity b/w 2 sets"""
 
     ul = len(set1 & set2)
     if ul == 0:
@@ -18,12 +18,17 @@ class user_data(object):
     def __init__(self,datafilename):
         """ returns the list whose keys are user IDs and the values are the sets of
             repos watched"""
-        result = {}
+        self.user_data={}
+        self.repo_data={}
         for line in open(datafilename,'r'):
             (usr,sep,repo) = line.strip().partition(':')
-            result.setdefault(int(usr),set()).add(int(repo))
+            self.user_data.setdefault(int(usr),set()).add(int(repo))
+            self.repo_data.setdefault(int(repo),set()).add(int(usr))
+        self.user_comp_data = dict((k,v) for k,v 
+                                   in self.user_data.items() if len(v)>1)
+        self.repo_comp_data = dict((k,v) for k,v 
+                                   in self.repo_data.items() if len(v)>1)
 
-        self.user_data = result
 
     def simil_weighted_pref(self,userID):
         """ returns a dictionary whose keys are repo IDs and values are
@@ -50,11 +55,31 @@ class user_data(object):
             result[repo] /= total_weight;
         return result;
 
+    def repo_simil(self, repoID):
+        """ returns a dictionary whose keys are repo IDs and values are 
+        similarities"""
+        repo_set=self.repo_data[repoID]
+        return dict((k,Jac_simil(repo_set,v)) for k,v in 
+                    self.repo_comp_data.items())
+    
+    def user_repo_total_simil(self, userID):
+        """return a dicitionnary whose keys are repo IDs and values are 
+        the sums of similarity scores over all repos watched by user"""
+        result={}
+
+        for repo in self.user_data[userID]:
+            for k,v in self.repo_simil(repo).items():
+                result[k] = result.get(k,0.0) + v
+
+        return result
+
+
     def get_relevance_scores(self,userID):
         """ returns a dictionary whose keys are repo IDs and whose values are
         the coresponding relevance scores """
 
-        return self.simil_weighted_pref(userID)
+        #return self.simil_weighted_pref(userID)
+        return self.user_repo_total_simil(userID)
 
     def get_user_candidates(self,userID,num_cand):
         """ returns the list of num_cand most relevant candidates to be
@@ -95,8 +120,9 @@ def _main():
     
     usr_data = user_data(data_filename)
     test_list = get_test_user_list(test_filename)
+    #test_list=range(1,5)
 
-    batch_size=100
+    batch_size=1
     test_len=len(test_list)
     print "test length: "+str(test_len)
     print "batch size: "+str(batch_size)
